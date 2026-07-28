@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Cafe AI status</title>
+<style>
+  body {
+    background: #111;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    margin: 0;
+  }
+  .light {
+    width: 200px;
+    height: 200px;
+    border-radius: 50%;
+    background: #e67e22;
+    box-shadow: 0 0 60px 15px #e67e22;
+    transition: background 0.3s ease, box-shadow 0.3s ease;
+  }
+  .light.detected {
+    background: #2ecc71;
+    box-shadow: 0 0 60px 15px #2ecc71;
+  }
+  .light.talking {
+    animation: pulse 0.8s ease-in-out infinite;
+  }
+  @keyframes pulse {
+    0%   { transform: scale(1); }
+    50%  { transform: scale(1.15); }
+    100% { transform: scale(1); }
+  }
+</style>
+</head>
+<body>
+  <div class="light" id="light"></div>
+  <script>
+    async function poll() {
+      try {
+        const res = await fetch('/status.json?t=' + Date.now());
+        const data = await res.json();
+        const el = document.getElementById('light');
+        el.classList.toggle('detected', !!data.face_detected);
+        el.classList.toggle('talking', !!data.talking);
+      } catch (e) {
+      }
+      setTimeout(poll, 300);
+    }
+    poll();
+  </script>
+</body>
+</html>

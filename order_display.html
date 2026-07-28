@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Your order</title>
+<style>
+  body { background: #1a1a1a; color: #fff; font-family: -apple-system, Helvetica, Arial, sans-serif; margin: 0; height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px; box-sizing: border-box; }
+  h1 { font-size: 2.2em; margin-bottom: 0.3em; color: #f2b134; }
+  #items { width: 100%; max-width: 700px; font-size: 1.6em; }
+  .item-row { display: flex; justify-content: space-between; padding: 14px 0; border-bottom: 1px solid #333; }
+  .item-desc { flex: 1; }
+  .item-price { margin-left: 20px; }
+  .item-extras { font-size: 0.6em; color: #999; display: block; }
+  #total-row { width: 100%; max-width: 700px; display: flex; justify-content: space-between; font-size: 2.2em; font-weight: bold; margin-top: 30px; padding-top: 20px; border-top: 3px solid #f2b134; }
+  #empty-message { font-size: 1.6em; color: #888; text-align: center; }
+  #paid-banner { display: none; font-size: 2.4em; color: #2ecc71; margin-top: 30px; text-align: center; }
+  body.paid #items, body.paid #total-row, body.paid #empty-message { opacity: 0.3; }
+  body.paid #paid-banner { display: block; }
+</style>
+</head>
+<body>
+  <h1>Your order</h1>
+  <div id="items"></div>
+  <div id="empty-message">Say what you'd like to order</div>
+  <div id="total-row" style="display: none;">
+    <span>Total</span>
+    <span id="total-amount"></span>
+  </div>
+  <div id="paid-banner">Payment complete - thank you!</div>
+  <script>
+    function describeItem(item) {
+      let desc = `${item.size} ${item.drink}`;
+      const extras = [];
+      if (item.milk) extras.push(`${item.milk} milk`);
+      if (item.extra_shots) extras.push(`${item.extra_shots} extra shot(s)`);
+      if (item.syrup) extras.push(`${item.syrup} syrup`);
+      return { desc, extras: extras.join(', ') };
+    }
+    async function poll() {
+      try {
+        const res = await fetch('/status.json?t=' + Date.now());
+        const data = await res.json();
+        const items = data.order_items || [];
+        const total = data.order_total || 0;
+        const state = data.order_state || 'idle';
+        const itemsEl = document.getElementById('items');
+        const emptyEl = document.getElementById('empty-message');
+        const totalRowEl = document.getElementById('total-row');
+        const totalAmountEl = document.getElementById('total-amount');
+        if (items.length === 0) {
+          itemsEl.innerHTML = '';
+          emptyEl.style.display = 'block';
+          totalRowEl.style.display = 'none';
+        } else {
+          emptyEl.style.display = 'none';
+          totalRowEl.style.display = 'flex';
+          itemsEl.innerHTML = items.map(item => {
+            const { desc, extras } = describeItem(item);
+            return `<div class="item-row"><span class="item-desc">${desc}${extras ? `<span class="item-extras">${extras}</span>` : ''}</span><span class="item-price">£${item.price.toFixed(2)}</span></div>`;
+          }).join('');
+          totalAmountEl.textContent = '£' + total.toFixed(2);
+        }
+        document.body.classList.toggle('paid', state === 'paid');
+      } catch (e) {}
+      setTimeout(poll, 400);
+    }
+    poll();
+  </script>
+</body>
+</html>
